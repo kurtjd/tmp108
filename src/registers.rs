@@ -48,32 +48,32 @@ pub struct LowLimit(u16);
 #[derive(DebugBits, FromBits, PartialEq)]
 pub struct Configuration {
     /// Conversion mode
-    cm: ConversionMode,
+    pub cm: ConversionMode,
 
     /// Thermostat mode
-    tm: ThermostatMode,
+    pub tm: ThermostatMode,
 
     /// Flag low
-    fl: bool,
+    pub fl: bool,
 
     /// Flag high
-    fh: bool,
+    pub fh: bool,
 
     /// Conversion rate
-    cr: ConversionRate,
+    pub cr: ConversionRate,
 
     /// ID bit
-    id: bool,
+    pub id: bool,
 
     _reserved0_3: u4,
 
     /// Hysteresis control.
-    hysteresis: Hysteresis,
+    pub hysteresis: Hysteresis,
 
     _reserved6: bool,
 
     /// Polarity
-    polarity: Polarity,
+    pub polarity: Polarity,
 }
 
 impl Default for Configuration {

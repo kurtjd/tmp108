@@ -103,6 +103,61 @@ impl<I2C: I2c, DELAY: DelayNs> Tmp108<I2C, DELAY> {
         Ok(Self::to_celsius(i16::from_be_bytes(raw)))
     }
 
+    /// Configure device for One-shot conversion
+    ///
+    /// # Errors
+    ///
+    /// `I2C::Error` when the I2C transaction fails
+    pub fn one_shot(&mut self) -> Result<(), I2C::Error> {
+        self.set_mode(ConversionMode::Continuous)
+    }
+
+    /// Place device in Shutdown mode
+    ///
+    /// # Errors
+    ///
+    /// `I2C::Error` when the I2C transaction fails
+    pub fn shutdown(&mut self) -> Result<(), I2C::Error> {
+        self.set_mode(ConversionMode::Shutdown)
+    }
+
+    /// Initiate continuous conversions
+    ///
+    /// # Errors
+    ///
+    /// `I2C::Error` when the I2C transaction fails
+    pub fn continuous<F>(&mut self, mut config: Configuration, f: F) -> Result<(), I2C::Error>
+    where
+        F: FnOnce(&mut Self) -> Result<(), I2C::Error>,
+    {
+        config.set_cm(ConversionMode::Continuous);
+        self.set_configuration(config)?;
+        f(self)?;
+        self.shutdown()
+    }
+
+    /// Wait for conversion to complete. This method will block for the amount
+    /// of time dictated by the CR bits in the [`Configuration`]
+    /// register. Caller is required to call this method from within their
+    /// continuous conversion closure.
+    ///
+    /// # Errors
+    ///
+    /// `I2C::Error` when the I2C transaction fails
+    pub fn wait_for_temperature(&mut self) -> Result<f32, I2C::Error> {
+        let config = self.configuration()?;
+
+        let delay = match config.cr() {
+            ConversionRate::Hertz025 => 4_000_000,
+            ConversionRate::Hertz1 => 1_000_000,
+            ConversionRate::Hertz4 => 250_000,
+            ConversionRate::Hertz16 => 62_500,
+        };
+
+        self.delay.delay_us(delay);
+        self.temperature()
+    }
+
     /// Read temperature low limit register
     ///
     /// # Errors
@@ -141,6 +196,12 @@ impl<I2C: I2c, DELAY: DelayNs> Tmp108<I2C, DELAY> {
     pub fn set_high_limit(&mut self, limit: f32) -> Result<(), I2C::Error> {
         let raw = Self::to_raw(limit);
         self.write(Register::HighLimit, raw.to_be_bytes())
+    }
+
+    fn set_mode(&mut self, mode: ConversionMode) -> Result<(), I2C::Error> {
+        let mut config = self.configuration()?;
+        config.set_cm(mode);
+        self.set_configuration(config)
     }
 
     fn read(&mut self, reg: Register) -> Result<[u8; 2], I2C::Error> {

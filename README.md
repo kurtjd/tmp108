@@ -52,9 +52,15 @@ let low_limit = 26.5;
 tmp.set_low_limit(low_limit)?;
 tmp.set_high_limit(high_limit)?;
 
-loop {
-    let temp = tmp.temperature()?;
-}
+tmp.continous(Default::default(), |t| {
+	for _ in 0..10 {
+		let temp = tmp.wait_for_temperature()?;
+		info!("Temperature {}", temp);
+	}
+
+	Ok(())
+})?;
+
 ```
 
 ## MSRV

@@ -20,11 +20,12 @@ ensure that an invalid address is not attempted.
 ## Usage
 
 ```rust
-let mut tmp = Tmp108::new(i2c);
-// let mut tmp = Tmp108::new_with_a0_gnd(i2c);
-// let mut tmp = Tmp108::new_with_a0_vplus(i2c);
-// let mut tmp = Tmp108::new_with_a0_sda(i2c);
-// let mut tmp = Tmp108::new_with_a0_scl(i2c);
+let delay = DelayNs;
+let mut tmp = Tmp108::new_with_a0_gnd(i2c, delay);
+// let mut tmp = Tmp108::new_with_a0_vplus(i2c, delay);
+// let mut tmp = Tmp108::new_with_a0_sda(i2c, delay);
+// let mut tmp = Tmp108::new_with_a0_scl(i2c, delay);
+// let mut tmp = Tmp108::new(i2c, delay, A0::Gnd);
 
 let cfg = Default::default()
     .with_cm(ConversionMode::OneShot)
@@ -52,7 +53,7 @@ let low_limit = 26.5;
 tmp.set_low_limit(low_limit)?;
 tmp.set_high_limit(high_limit)?;
 
-tmp.continous(Default::default(), |t| {
+tmp.continuous(Default::default(), |t| {
 	for _ in 0..10 {
 		let temp = tmp.wait_for_temperature()?;
 		info!("Temperature {}", temp);

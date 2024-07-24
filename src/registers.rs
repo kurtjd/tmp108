@@ -45,7 +45,7 @@ pub struct LowLimit(u16);
 
 /// Configuration register.
 #[bitsize(16)]
-#[derive(DebugBits, FromBits, PartialEq)]
+#[derive(DebugBits, FromBits, PartialEq, Clone, Copy)]
 pub struct Configuration {
     /// Conversion mode
     pub cm: ConversionMode,

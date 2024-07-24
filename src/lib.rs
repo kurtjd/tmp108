@@ -9,6 +9,7 @@
 //! [`Datasheet`]: https://www.ti.com/lit/gpn/tmp108
 
 #![doc(html_root_url = "https://docs.rs/tmp108/latest")]
+#![doc = include_str!("../README.md")]
 #![cfg_attr(not(test), no_std)]
 
 use embedded_hal::{delay::DelayNs, i2c::I2c};

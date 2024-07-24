@@ -11,61 +11,60 @@
 #![doc(html_root_url = "https://docs.rs/tmp108/latest")]
 #![cfg_attr(not(test), no_std)]
 
-use embedded_hal::i2c::I2c;
+use embedded_hal::{delay::DelayNs, i2c::I2c};
 
 mod registers;
 pub use registers::*;
 
 /// TMP108 device driver
-pub struct Tmp108<I2C: I2c> {
+pub struct Tmp108<I2C: I2c, DELAY: DelayNs> {
     /// The concrete I2C bus implementation
     i2c: I2C,
+
+    /// The concrete DelayNs implementation
+    delay: DELAY,
 
     /// The I2C address.
     addr: u8,
 }
 
-impl<I2C: I2c> Tmp108<I2C> {
+impl<I2C: I2c, DELAY: DelayNs> Tmp108<I2C, DELAY> {
     const CELSIUS_PER_BIT: f32 = 0.0625;
+    const CONVERSION_TIME_TYPICAL_MS: u32 = 27;
 
-    /// Create a new TMP108 instance with default address
-    pub fn new(i2c: I2C) -> Self {
+    /// Create a new TMP108 instance.
+    pub fn new(i2c: I2C, mut delay: DELAY, a0: A0) -> Self {
+        delay.delay_ms(Self::CONVERSION_TIME_TYPICAL_MS);
+
         Self {
             i2c,
-            addr: A0Connection::default().into(),
+            delay,
+            addr: a0.into(),
         }
     }
 
-    /// Create a new TMP108 instance with A0 tied to GND
-    pub fn new_with_a0_gnd(i2c: I2C) -> Self {
-        Self {
-            i2c,
-            addr: A0Connection::Gnd.into(),
-        }
+    /// Create a new TMP108 instance with A0 tied to GND, resulting in an
+    /// instance responding to address `0x48`.
+    pub fn new_with_a0_gnd(i2c: I2C, delay: DELAY) -> Self {
+        Self::new(i2c, delay, A0::Gnd)
     }
 
-    /// Create a new TMP108 instance with A0 tied to V+
-    pub fn new_with_a0_vplus(i2c: I2C) -> Self {
-        Self {
-            i2c,
-            addr: A0Connection::Vplus.into(),
-        }
+    /// Create a new TMP108 instance with A0 tied to V+, resulting in an
+    /// instance responding to address `0x49`.
+    pub fn new_with_a0_vplus(i2c: I2C, delay: DELAY) -> Self {
+        Self::new(i2c, delay, A0::Vplus)
     }
 
-    /// Create a new TMP108 instance with A0 tied to SDA
-    pub fn new_with_a0_sda(i2c: I2C) -> Self {
-        Self {
-            i2c,
-            addr: A0Connection::Sda.into(),
-        }
+    /// Create a new TMP108 instance with A0 tied to SDA, resulting in an
+    /// instance responding to address `0x4a`.
+    pub fn new_with_a0_sda(i2c: I2C, delay: DELAY) -> Self {
+        Self::new(i2c, delay, A0::Sda)
     }
 
-    /// Create a new TMP108 instance with A0 tied to SCL
-    pub fn new_with_a0_scl(i2c: I2C) -> Self {
-        Self {
-            i2c,
-            addr: A0Connection::Scl.into(),
-        }
+    /// Create a new TMP108 instance with A0 tied to SCL, resulting in an
+    /// instance responding to address `0x4b`.
+    pub fn new_with_a0_scl(i2c: I2C, delay: DELAY) -> Self {
+        Self::new(i2c, delay, A0::Scl)
     }
 
     /// Destroy the driver instance, return the I2C bus instance.
@@ -87,6 +86,7 @@ impl<I2C: I2c> Tmp108<I2C> {
 
     /// Read temperature register
     pub fn temperature(&mut self) -> Result<f32, I2C::Error> {
+        self.delay.delay_ms(Self::CONVERSION_TIME_TYPICAL_MS);
         let raw = self.read(Register::Temperature)?;
         Ok(self.to_celsius(i16::from_be_bytes(raw)))
     }
@@ -142,7 +142,7 @@ impl<I2C: I2c> Tmp108<I2C> {
 
 /// A0 pin logic level representation.
 #[derive(Debug)]
-enum A0Connection {
+pub enum A0 {
     /// A0 tied to GND (default).
     Gnd,
     /// A0 tied to V+.
@@ -153,19 +153,19 @@ enum A0Connection {
     Scl,
 }
 
-impl Default for A0Connection {
+impl Default for A0 {
     fn default() -> Self {
         Self::Gnd
     }
 }
 
-impl From<A0Connection> for u8 {
-    fn from(connection: A0Connection) -> Self {
+impl From<A0> for u8 {
+    fn from(connection: A0) -> Self {
         match connection {
-            A0Connection::Gnd => 0b100_1000,
-            A0Connection::Vplus => 0b100_1001,
-            A0Connection::Sda => 0b100_1010,
-            A0Connection::Scl => 0b100_1011,
+            A0::Gnd => 0b100_1000,
+            A0::Vplus => 0b100_1001,
+            A0::Sda => 0b100_1010,
+            A0::Scl => 0b100_1011,
         }
     }
 }
@@ -174,38 +174,39 @@ impl From<A0Connection> for u8 {
 mod tests {
     use super::*;
     use assert_approx_eq::assert_approx_eq;
-    use embedded_hal_mock::eh1::i2c::{Mock, Transaction};
+    use embedded_hal_mock::eh1::{
+        delay::NoopDelay,
+        i2c::{Mock, Transaction},
+    };
 
     #[test]
     fn handle_a0_pin_accordingly() {
         let expectations = vec![];
 
         let mock = Mock::new(&expectations);
-        let tmp = Tmp108::new(mock);
+        let delay = NoopDelay::new();
+        let tmp = Tmp108::new_with_a0_gnd(mock, delay);
         assert_eq!(tmp.addr, 0x48);
         let mut mock = tmp.destroy();
         mock.done();
 
         let mock = Mock::new(&expectations);
-        let tmp = Tmp108::new_with_a0_gnd(mock);
-        assert_eq!(tmp.addr, 0x48);
-        let mut mock = tmp.destroy();
-        mock.done();
-
-        let mock = Mock::new(&expectations);
-        let tmp = Tmp108::new_with_a0_vplus(mock);
+        let delay = NoopDelay::new();
+        let tmp = Tmp108::new_with_a0_vplus(mock, delay);
         assert_eq!(tmp.addr, 0x49);
         let mut mock = tmp.destroy();
         mock.done();
 
         let mock = Mock::new(&expectations);
-        let tmp = Tmp108::new_with_a0_sda(mock);
+        let delay = NoopDelay::new();
+        let tmp = Tmp108::new_with_a0_sda(mock, delay);
         assert_eq!(tmp.addr, 0x4a);
         let mut mock = tmp.destroy();
         mock.done();
 
         let mock = Mock::new(&expectations);
-        let tmp = Tmp108::new_with_a0_scl(mock);
+        let delay = NoopDelay::new();
+        let tmp = Tmp108::new_with_a0_scl(mock, delay);
         assert_eq!(tmp.addr, 0x4b);
         let mut mock = tmp.destroy();
         mock.done();
@@ -232,7 +233,8 @@ mod tests {
 
         for (e, t) in expectations.iter().zip(temps.iter()) {
             let mock = Mock::new(e);
-            let mut tmp = Tmp108::new(mock);
+            let delay = NoopDelay::new();
+            let mut tmp = Tmp108::new_with_a0_gnd(mock, delay);
             let result = tmp.temperature();
             assert!(result.is_ok());
 
@@ -252,7 +254,8 @@ mod tests {
         ];
 
         let mock = Mock::new(&expectations);
-        let mut tmp = Tmp108::new(mock);
+        let delay = NoopDelay::new();
+        let mut tmp = Tmp108::new_with_a0_gnd(mock, delay);
         let result = tmp.configuration();
         assert!(result.is_ok());
 

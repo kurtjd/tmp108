@@ -65,12 +65,12 @@ pub struct Configuration {
     /// ID bit
     pub id: bool,
 
-    _reserved0_3: u4,
+    reserved0_3: u4,
 
     /// Hysteresis control.
     pub hysteresis: Hysteresis,
 
-    _reserved6: bool,
+    reserved6: bool,
 
     /// Polarity
     pub polarity: Polarity,
@@ -84,48 +84,56 @@ impl Default for Configuration {
 
 impl Configuration {
     /// Configure conversion mode.
+    #[must_use]
     pub fn with_cm(mut self, mode: ConversionMode) -> Self {
         self.set_cm(mode);
         Self::from(self.value)
     }
 
     /// Configure thermostat mode.
+    #[must_use]
     pub fn with_tm(mut self, mode: ThermostatMode) -> Self {
         self.set_tm(mode);
         Self::from(self.value)
     }
 
     /// Configure flag low.
+    #[must_use]
     pub fn with_fl(mut self, flag: bool) -> Self {
         self.set_fl(flag);
         Self::from(self.value)
     }
 
     /// Configure flag high.
+    #[must_use]
     pub fn with_fh(mut self, flag: bool) -> Self {
         self.set_fh(flag);
         Self::from(self.value)
     }
 
     /// Configure conversion rate.
+    #[must_use]
     pub fn with_cr(mut self, rate: ConversionRate) -> Self {
         self.set_cr(rate);
         Self::from(self.value)
     }
 
     /// Configure ID bit.
+    #[must_use]
     pub fn with_id(mut self, id: bool) -> Self {
         self.set_id(id);
         Self::from(self.value)
     }
 
     /// Configure hysteresis.
+    #[must_use]
     pub fn with_hysteresis(mut self, hyst: Hysteresis) -> Self {
         self.set_hysteresis(hyst);
         Self::from(self.value)
     }
 
     /// Configure alert polarity.
+    #[must_use]
     pub fn with_polarity(mut self, polarity: Polarity) -> Self {
         self.set_polarity(polarity);
         Self::from(self.value)

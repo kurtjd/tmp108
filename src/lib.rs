@@ -21,7 +21,7 @@ pub struct Tmp108<I2C: I2c, DELAY: DelayNs> {
     /// The concrete I2C bus implementation
     i2c: I2C,
 
-    /// The concrete DelayNs implementation
+    /// The concrete [`DelayNs`] implementation
     delay: DELAY,
 
     /// The I2C address.
@@ -73,45 +73,73 @@ impl<I2C: I2c, DELAY: DelayNs> Tmp108<I2C, DELAY> {
     }
 
     /// Read configuration register
+    ///
+    /// # Errors
+    ///
+    /// `I2C::Error` when the I2C transaction fails
     pub fn configuration(&mut self) -> Result<Configuration, I2C::Error> {
         let data = self.read(Register::Configuration)?;
         Ok(Configuration::from(u16::from_be_bytes(data)))
     }
 
     /// Set configuration register
+    ///
+    /// # Errors
+    ///
+    /// `I2C::Error` when the I2C transaction fails
     pub fn set_configuration(&mut self, config: Configuration) -> Result<(), I2C::Error> {
         let value: u16 = config.into();
         self.write(Register::Configuration, value.to_be_bytes())
     }
 
     /// Read temperature register
+    ///
+    /// # Errors
+    ///
+    /// `I2C::Error` when the I2C transaction fails
     pub fn temperature(&mut self) -> Result<f32, I2C::Error> {
         self.delay.delay_ms(Self::CONVERSION_TIME_TYPICAL_MS);
         let raw = self.read(Register::Temperature)?;
-        Ok(self.to_celsius(i16::from_be_bytes(raw)))
+        Ok(Self::to_celsius(i16::from_be_bytes(raw)))
     }
 
     /// Read temperature low limit register
+    ///
+    /// # Errors
+    ///
+    /// `I2C::Error` when the I2C transaction fails
     pub fn low_limit(&mut self) -> Result<f32, I2C::Error> {
         let raw = self.read(Register::LowLimit)?;
-        Ok(self.to_celsius(i16::from_be_bytes(raw)))
+        Ok(Self::to_celsius(i16::from_be_bytes(raw)))
     }
 
     /// Set temperature low limit register
+    ///
+    /// # Errors
+    ///
+    /// `I2C::Error` when the I2C transaction fails
     pub fn set_low_limit(&mut self, limit: f32) -> Result<(), I2C::Error> {
-        let raw = self.to_raw(limit);
+        let raw = Self::to_raw(limit);
         self.write(Register::LowLimit, raw.to_be_bytes())
     }
 
     /// Read temperature high limit register
+    ///
+    /// # Errors
+    ///
+    /// `I2C::Error` when the I2C transaction fails
     pub fn high_limit(&mut self) -> Result<f32, I2C::Error> {
         let raw = self.read(Register::HighLimit)?;
-        Ok(self.to_celsius(i16::from_be_bytes(raw)))
+        Ok(Self::to_celsius(i16::from_be_bytes(raw)))
     }
 
     /// Set temperature low limit register
+    ///
+    /// # Errors
+    ///
+    /// `I2C::Error` when the I2C transaction fails
     pub fn set_high_limit(&mut self, limit: f32) -> Result<(), I2C::Error> {
-        let raw = self.to_raw(limit);
+        let raw = Self::to_raw(limit);
         self.write(Register::HighLimit, raw.to_be_bytes())
     }
 
@@ -131,11 +159,12 @@ impl<I2C: I2c, DELAY: DelayNs> Tmp108<I2C, DELAY> {
         self.i2c.write(self.addr, &data)
     }
 
-    fn to_celsius(&self, t: i16) -> f32 {
+    fn to_celsius(t: i16) -> f32 {
         f32::from(t / 16) * Self::CELSIUS_PER_BIT
     }
 
-    fn to_raw(&self, t: f32) -> i16 {
+    #[allow(clippy::cast_possible_truncation)]
+    fn to_raw(t: f32) -> i16 {
         (t * 16.0 / Self::CELSIUS_PER_BIT) as i16
     }
 }

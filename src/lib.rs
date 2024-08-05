@@ -12,7 +12,8 @@
 #![doc = include_str!("../README.md")]
 #![cfg_attr(not(test), no_std)]
 
-use embedded_hal::{delay::DelayNs, i2c::I2c};
+use embedded_hal::delay::DelayNs;
+use embedded_hal::i2c::I2c;
 
 mod registers;
 pub use registers::*;
@@ -263,12 +264,11 @@ impl From<A0> for u8 {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use assert_approx_eq::assert_approx_eq;
-    use embedded_hal_mock::eh1::{
-        delay::NoopDelay,
-        i2c::{Mock, Transaction},
-    };
+    use embedded_hal_mock::eh1::delay::NoopDelay;
+    use embedded_hal_mock::eh1::i2c::{Mock, Transaction};
+
+    use super::*;
 
     #[test]
     fn handle_a0_pin_accordingly() {
@@ -318,9 +318,7 @@ mod tests {
             vec![Transaction::write_read(0x48, vec![0x00], vec![0xe7, 0x00])],
             vec![Transaction::write_read(0x48, vec![0x00], vec![0xc9, 0x00])],
         ];
-        let temps = vec![
-            127.9375, 100.0, 80.0, 75.0, 50.0, 25.0, 0.25, 0.0, -0.25, -25.0, -55.0,
-        ];
+        let temps = vec![127.9375, 100.0, 80.0, 75.0, 50.0, 25.0, 0.25, 0.0, -0.25, -25.0, -55.0];
 
         for (e, t) in expectations.iter().zip(temps.iter()) {
             let mock = Mock::new(e);

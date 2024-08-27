@@ -19,7 +19,7 @@ ensure that an invalid address is not attempted.
 
 ## Usage
 
-```rust
+```rust,ignore
 let delay = DelayNs;
 let mut tmp = Tmp108::new_with_a0_gnd(i2c, delay);
 // let mut tmp = Tmp108::new_with_a0_vplus(i2c, delay);

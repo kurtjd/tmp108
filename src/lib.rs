@@ -32,7 +32,7 @@ impl<I2C: embedded_hal::i2c::I2c, DELAY: embedded_hal::delay::DelayNs> Tmp108<I2
     const CONVERSION_TIME_TYPICAL_MS: u32 = 27;
 
     /// Create a new TMP108 instance.
-    pub fn new(i2c: I2C, mut delay: DELAY, a0: A0) -> Self {
+    pub fn new_blocking(i2c: I2C, mut delay: DELAY, a0: A0) -> Self {
         delay.delay_ms(Self::CONVERSION_TIME_TYPICAL_MS);
 
         Self {
@@ -44,26 +44,26 @@ impl<I2C: embedded_hal::i2c::I2c, DELAY: embedded_hal::delay::DelayNs> Tmp108<I2
 
     /// Create a new TMP108 instance with A0 tied to GND, resulting in an
     /// instance responding to address `0x48`.
-    pub fn new_with_a0_gnd(i2c: I2C, delay: DELAY) -> Self {
-        Self::new(i2c, delay, A0::Gnd)
+    pub fn new_blocking_with_a0_gnd(i2c: I2C, delay: DELAY) -> Self {
+        Self::new_blocking(i2c, delay, A0::Gnd)
     }
 
     /// Create a new TMP108 instance with A0 tied to V+, resulting in an
     /// instance responding to address `0x49`.
-    pub fn new_with_a0_vplus(i2c: I2C, delay: DELAY) -> Self {
-        Self::new(i2c, delay, A0::Vplus)
+    pub fn new_blocking_with_a0_vplus(i2c: I2C, delay: DELAY) -> Self {
+        Self::new_blocking(i2c, delay, A0::Vplus)
     }
 
     /// Create a new TMP108 instance with A0 tied to SDA, resulting in an
     /// instance responding to address `0x4a`.
-    pub fn new_with_a0_sda(i2c: I2C, delay: DELAY) -> Self {
-        Self::new(i2c, delay, A0::Sda)
+    pub fn new_blocking_with_a0_sda(i2c: I2C, delay: DELAY) -> Self {
+        Self::new_blocking(i2c, delay, A0::Sda)
     }
 
     /// Create a new TMP108 instance with A0 tied to SCL, resulting in an
     /// instance responding to address `0x4b`.
-    pub fn new_with_a0_scl(i2c: I2C, delay: DELAY) -> Self {
-        Self::new(i2c, delay, A0::Scl)
+    pub fn new_blocking_with_a0_scl(i2c: I2C, delay: DELAY) -> Self {
+        Self::new_blocking(i2c, delay, A0::Scl)
     }
 
     /// Destroy the driver instance, return the I2C bus instance.
@@ -273,28 +273,28 @@ mod tests {
 
         let mock = Mock::new(&expectations);
         let delay = NoopDelay::new();
-        let tmp = Tmp108::new_with_a0_gnd(mock, delay);
+        let tmp = Tmp108::new_blocking_with_a0_gnd(mock, delay);
         assert_eq!(tmp.addr, 0x48);
         let mut mock = tmp.destroy();
         mock.done();
 
         let mock = Mock::new(&expectations);
         let delay = NoopDelay::new();
-        let tmp = Tmp108::new_with_a0_vplus(mock, delay);
+        let tmp = Tmp108::new_blocking_with_a0_vplus(mock, delay);
         assert_eq!(tmp.addr, 0x49);
         let mut mock = tmp.destroy();
         mock.done();
 
         let mock = Mock::new(&expectations);
         let delay = NoopDelay::new();
-        let tmp = Tmp108::new_with_a0_sda(mock, delay);
+        let tmp = Tmp108::new_blocking_with_a0_sda(mock, delay);
         assert_eq!(tmp.addr, 0x4a);
         let mut mock = tmp.destroy();
         mock.done();
 
         let mock = Mock::new(&expectations);
         let delay = NoopDelay::new();
-        let tmp = Tmp108::new_with_a0_scl(mock, delay);
+        let tmp = Tmp108::new_blocking_with_a0_scl(mock, delay);
         assert_eq!(tmp.addr, 0x4b);
         let mut mock = tmp.destroy();
         mock.done();
@@ -320,7 +320,7 @@ mod tests {
         for (e, t) in expectations.iter().zip(temps.iter()) {
             let mock = Mock::new(e);
             let delay = NoopDelay::new();
-            let mut tmp = Tmp108::new_with_a0_gnd(mock, delay);
+            let mut tmp = Tmp108::new_blocking_with_a0_gnd(mock, delay);
             let result = tmp.temperature();
             assert!(result.is_ok());
 
@@ -341,7 +341,7 @@ mod tests {
 
         let mock = Mock::new(&expectations);
         let delay = NoopDelay::new();
-        let mut tmp = Tmp108::new_with_a0_gnd(mock, delay);
+        let mut tmp = Tmp108::new_blocking_with_a0_gnd(mock, delay);
         let result = tmp.configuration();
         assert!(result.is_ok());
 

@@ -12,25 +12,22 @@
 #![doc = include_str!("../README.md")]
 #![cfg_attr(not(test), no_std)]
 
-use embedded_hal::delay::DelayNs;
-use embedded_hal::i2c::I2c;
-
 mod registers;
 pub use registers::*;
 
 /// TMP108 device driver
-pub struct Tmp108<I2C: I2c, DELAY: DelayNs> {
+pub struct Tmp108<I2C: embedded_hal::i2c::I2c, DELAY: embedded_hal::delay::DelayNs> {
     /// The concrete I2C bus implementation
     i2c: I2C,
 
-    /// The concrete [`DelayNs`] implementation
+    /// The concrete [`embedded_hal::delay::DelayNs`] implementation
     delay: DELAY,
 
     /// The I2C address.
     addr: u8,
 }
 
-impl<I2C: I2c, DELAY: DelayNs> Tmp108<I2C, DELAY> {
+impl<I2C: embedded_hal::i2c::I2c, DELAY: embedded_hal::delay::DelayNs> Tmp108<I2C, DELAY> {
     const CELSIUS_PER_BIT: f32 = 0.0625;
     const CONVERSION_TIME_TYPICAL_MS: u32 = 27;
 

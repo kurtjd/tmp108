@@ -1,4 +1,7 @@
 //! Tmp108 Blocking API
+use embedded_sensors::sensor;
+use embedded_sensors::temperature::{DegreesCelsius, TemperatureSensor};
+
 use super::*;
 
 /// TMP108 blocking device driver
@@ -319,5 +322,28 @@ mod tests {
 
         let mut mock = tmp.destroy();
         mock.done();
+    }
+}
+
+/// Tmp108 Errors
+#[derive(Debug)]
+pub enum Error<E: embedded_hal::i2c::Error> {
+    /// I2C Bus Error
+    Bus(E),
+}
+
+impl<E: embedded_hal::i2c::Error> sensor::Error for Error<E> {
+    fn kind(&self) -> sensor::ErrorKind {
+        sensor::ErrorKind::Other
+    }
+}
+
+impl<I2C: embedded_hal::i2c::I2c, DELAY: embedded_hal::delay::DelayNs> sensor::ErrorType for Tmp108<I2C, DELAY> {
+    type Error = Error<I2C::Error>;
+}
+
+impl<I2C: embedded_hal::i2c::I2c, DELAY: embedded_hal::delay::DelayNs> TemperatureSensor for Tmp108<I2C, DELAY> {
+    fn temperature(&mut self) -> Result<DegreesCelsius, Self::Error> {
+        self.temperature().map_err(|e| Error::Bus(e))
     }
 }

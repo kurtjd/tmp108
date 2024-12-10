@@ -1,6 +1,10 @@
 //! Tmp108 Async API
-use super::*;
 use core::future::Future;
+
+use embedded_sensors_async::sensor;
+use embedded_sensors_async::temperature::{DegreesCelsius, TemperatureSensor};
+
+use super::*;
 
 /// TMP108 asynchronous device driver
 pub struct Tmp108<I2C: embedded_hal_async::i2c::I2c, DELAY: embedded_hal_async::delay::DelayNs> {
@@ -321,5 +325,32 @@ mod tests {
 
         let mut mock = tmp.destroy();
         mock.done();
+    }
+}
+
+/// Tmp108 Errors
+#[derive(Debug)]
+pub enum Error<E: embedded_hal_async::i2c::Error> {
+    /// I2C Bus Error
+    Bus(E),
+}
+
+impl<E: embedded_hal_async::i2c::Error> sensor::Error for Error<E> {
+    fn kind(&self) -> sensor::ErrorKind {
+        sensor::ErrorKind::Other
+    }
+}
+
+impl<I2C: embedded_hal_async::i2c::I2c, DELAY: embedded_hal_async::delay::DelayNs> sensor::ErrorType
+    for Tmp108<I2C, DELAY>
+{
+    type Error = Error<I2C::Error>;
+}
+
+impl<I2C: embedded_hal_async::i2c::I2c, DELAY: embedded_hal_async::delay::DelayNs> TemperatureSensor
+    for Tmp108<I2C, DELAY>
+{
+    async fn temperature(&mut self) -> Result<DegreesCelsius, Self::Error> {
+        self.temperature().await.map_err(|e| Error::Bus(e))
     }
 }

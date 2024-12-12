@@ -205,8 +205,7 @@ impl<I2C: embedded_hal_async::i2c::I2c, DELAY: embedded_hal_async::delay::DelayN
         let mut data = [0; 3];
 
         data[0] = reg.into();
-        data[1] = value[0];
-        data[2] = value[1];
+        data[1..].copy_from_slice(&value);
 
         self.i2c.write(self.addr, &data).await
     }

@@ -202,8 +202,7 @@ impl<I2C: embedded_hal::i2c::I2c, DELAY: embedded_hal::delay::DelayNs> Tmp108<I2
         let mut data = [0; 3];
 
         data[0] = reg.into();
-        data[1] = value[0];
-        data[2] = value[1];
+        data[1..].copy_from_slice(&value);
 
         self.i2c.write(self.addr, &data)
     }

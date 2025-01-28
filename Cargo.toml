@@ -2,13 +2,13 @@
 name = "tmp108"
 version = "0.1.0"
 authors = ["Felipe Balbi <febalbi@microsoft.com>"]
-repository = "https://github.com/pop-project/tmp108"
+repository = "https://github.com/OpenDevicePartnership/tmp108"
 license = "MIT"
 description = "Platform-agnostic Rust driver for the TMP108 temperature sensor."
 readme = "README.md"
 keywords = ["temperature", "sensor", "i2c", "driver", "embedded-hal-driver"]
 categories = ["embedded", "hardware-support", "no-std"]
-homepage = "https://github.com/pop-project/tmp108"
+homepage = "https://github.com/OpenDevicePartnership/tmp108"
 documentation = "https://docs.rs/tmp108"
 include = [
 	"/**/*.rs",
@@ -22,8 +22,8 @@ edition = "2021"
 bilge = "0.2.0"
 embedded-hal = "1.0.0"
 embedded-hal-async = "1.0.0"
-embedded-sensors = { git = "https://github.com/pop-project/embedded-sensors" }
-embedded-sensors-async = { git = "https://github.com/pop-project/embedded-sensors" }
+embedded-sensors = { git = "https://github.com/OpenDevicePartnership/embedded-sensors" }
+embedded-sensors-async = { git = "https://github.com/OpenDevicePartnership/embedded-sensors" }
 
 [dev-dependencies]
 assert_approx_eq = "1.1.0"

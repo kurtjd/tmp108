@@ -2,7 +2,7 @@
 use embedded_sensors::sensor;
 use embedded_sensors::temperature::{DegreesCelsius, TemperatureSensor};
 
-use super::*;
+use super::{Configuration, ConversionMode, ConversionRate, Register, A0};
 
 /// TMP108 blocking device driver
 pub struct Tmp108<I2C: embedded_hal::i2c::I2c, DELAY: embedded_hal::delay::DelayNs> {
@@ -345,6 +345,6 @@ impl<I2C: embedded_hal::i2c::I2c, DELAY: embedded_hal::delay::DelayNs> sensor::E
 
 impl<I2C: embedded_hal::i2c::I2c, DELAY: embedded_hal::delay::DelayNs> TemperatureSensor for Tmp108<I2C, DELAY> {
     fn temperature(&mut self) -> Result<DegreesCelsius, Self::Error> {
-        self.temperature().map_err(|e| Error::Bus(e))
+        self.temperature().map_err(Error::Bus)
     }
 }

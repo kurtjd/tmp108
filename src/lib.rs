@@ -14,7 +14,10 @@
 
 mod registers;
 pub use registers::*;
+
+#[cfg(feature = "async")]
 pub mod asynchronous;
+
 pub mod blocking;
 
 /// A0 pin logic level representation.

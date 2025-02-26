@@ -222,6 +222,8 @@ impl<I2C: embedded_hal_async::i2c::I2c, DELAY: embedded_hal_async::delay::DelayN
 
 #[cfg(test)]
 mod tests {
+    use crate::{Hysteresis, Polarity, ThermostatMode};
+
     use assert_approx_eq::assert_approx_eq;
     use embedded_hal_mock::eh1::delay::NoopDelay;
     use embedded_hal_mock::eh1::i2c::{Mock, Transaction};

@@ -1,5 +1,10 @@
 # TMP108
 
+[![no-std](https://github.com/OpenDevicePartnership/tmp108/actions/workflows/nostd.yml/badge.svg)](https://github.com/OpenDevicePartnership/tmp108/actions/workflows/nostd.yml)
+[![check](https://github.com/OpenDevicePartnership/tmp108/actions/workflows/check.yml/badge.svg)](https://github.com/OpenDevicePartnership/tmp108/actions/workflows/check.yml)
+[![rolling](https://github.com/OpenDevicePartnership/tmp108/actions/workflows/rolling.yml/badge.svg)](https://github.com/OpenDevicePartnership/tmp108/actions/workflows/rolling.yml)
+[![LICENSE](https://img.shields.io/badge/License-MIT-blue)](./LICENSE)
+
 A `#[no_std]` platform-agnostic driver for the
 [TMP108](https://www.ti.com/lit/gpn/tmp108) temperature sensor using
 the [embedded-hal](https://docs.rs/embedded-hal) traits.

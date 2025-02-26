@@ -4,7 +4,7 @@ use core::future::Future;
 use embedded_sensors_async::sensor;
 use embedded_sensors_async::temperature::{DegreesCelsius, TemperatureSensor};
 
-use super::*;
+use super::{Configuration, ConversionMode, ConversionRate, Register, A0};
 
 /// TMP108 asynchronous device driver
 pub struct Tmp108<I2C: embedded_hal_async::i2c::I2c, DELAY: embedded_hal_async::delay::DelayNs> {
@@ -222,6 +222,8 @@ impl<I2C: embedded_hal_async::i2c::I2c, DELAY: embedded_hal_async::delay::DelayN
 
 #[cfg(test)]
 mod tests {
+    use crate::{Hysteresis, Polarity, ThermostatMode};
+
     use assert_approx_eq::assert_approx_eq;
     use embedded_hal_mock::eh1::delay::NoopDelay;
     use embedded_hal_mock::eh1::i2c::{Mock, Transaction};
@@ -350,6 +352,6 @@ impl<I2C: embedded_hal_async::i2c::I2c, DELAY: embedded_hal_async::delay::DelayN
     for Tmp108<I2C, DELAY>
 {
     async fn temperature(&mut self) -> Result<DegreesCelsius, Self::Error> {
-        self.temperature().await.map_err(|e| Error::Bus(e))
+        self.temperature().await.map_err(Error::Bus)
     }
 }

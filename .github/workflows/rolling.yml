@@ -28,9 +28,7 @@ jobs:
       - name: cargo install cargo-hack
         uses: taiki-e/install-action@cargo-hack
       - name: cargo check
-        run: |
-          cargo check -F mimxrt633s,rt,defmt,time,time-driver,unstable-pac
-          cargo check -F mimxrt685s,rt,defmt,time,time-driver,unstable-pac
+        run: cargo check -F full
 
   msrv:
     runs-on: ubuntu-latest
@@ -60,6 +58,4 @@ jobs:
         with:
           toolchain: ${{ matrix.msrv }}
       - name: cargo +${{ matrix.msrv }} check
-        run: |
-          cargo check -F mimxrt633s,rt,defmt,time,time-driver,unstable-pac
-          cargo check -F mimxrt685s,rt,defmt,time,time-driver,unstable-pac
+        run: cargo check -F full

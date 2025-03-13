@@ -3,7 +3,6 @@ use core::future::Future;
 
 #[cfg(feature = "embedded-sensors-async")]
 use embedded_sensors_async::sensor;
-
 #[cfg(feature = "embedded-sensors-async")]
 use embedded_sensors_async::temperature::{DegreesCelsius, TemperatureSensor};
 
@@ -255,13 +254,12 @@ impl<I2C: embedded_hal_async::i2c::I2c, DELAY: embedded_hal_async::delay::DelayN
 
 #[cfg(test)]
 mod tests {
-    use crate::{Hysteresis, Polarity, ThermostatMode};
-
     use assert_approx_eq::assert_approx_eq;
     use embedded_hal_mock::eh1::delay::NoopDelay;
     use embedded_hal_mock::eh1::i2c::{Mock, Transaction};
 
     use super::*;
+    use crate::{Hysteresis, Polarity, ThermostatMode};
 
     #[tokio::test]
     async fn handle_a0_pin_accordingly() {

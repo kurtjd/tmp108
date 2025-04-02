@@ -1,9 +1,9 @@
 //! Tmp108 Blocking API
 
-#[cfg(feature = "embedded-sensors")]
-use embedded_sensors::sensor;
-#[cfg(feature = "embedded-sensors")]
-use embedded_sensors::temperature::{DegreesCelsius, TemperatureSensor};
+#[cfg(feature = "embedded-sensors-hal")]
+use embedded_sensors_hal::sensor;
+#[cfg(feature = "embedded-sensors-hal")]
+use embedded_sensors_hal::temperature::{DegreesCelsius, TemperatureSensor};
 
 use super::{Configuration, ConversionMode, ConversionRate, Register, A0};
 
@@ -227,19 +227,19 @@ pub enum Error<E: embedded_hal::i2c::Error> {
     Bus(E),
 }
 
-#[cfg(feature = "embedded-sensors")]
+#[cfg(feature = "embedded-sensors-hal")]
 impl<E: embedded_hal::i2c::Error> sensor::Error for Error<E> {
     fn kind(&self) -> sensor::ErrorKind {
         sensor::ErrorKind::Other
     }
 }
 
-#[cfg(feature = "embedded-sensors")]
+#[cfg(feature = "embedded-sensors-hal")]
 impl<I2C: embedded_hal::i2c::I2c, DELAY: embedded_hal::delay::DelayNs> sensor::ErrorType for Tmp108<I2C, DELAY> {
     type Error = Error<I2C::Error>;
 }
 
-#[cfg(feature = "embedded-sensors")]
+#[cfg(feature = "embedded-sensors-hal")]
 impl<I2C: embedded_hal::i2c::I2c, DELAY: embedded_hal::delay::DelayNs> TemperatureSensor for Tmp108<I2C, DELAY> {
     fn temperature(&mut self) -> Result<DegreesCelsius, Self::Error> {
         self.temperature().map_err(Error::Bus)

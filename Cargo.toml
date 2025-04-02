@@ -23,14 +23,14 @@ rust-version = "1.83.0"
 bilge = "0.2.0"
 embedded-hal = "1.0.0"
 embedded-hal-async = { version = "1.0.0", optional = true }
-embedded-sensors = { git = "https://github.com/OpenDevicePartnership/embedded-sensors", optional = true }
-embedded-sensors-async = { git = "https://github.com/OpenDevicePartnership/embedded-sensors", optional = true }
+embedded-sensors-hal = { version = "0.1.0", optional = true }
+embedded-sensors-hal-async = { version = "0.1.0", optional = true }
 
 [features]
-full = [ "async", "embedded-sensors", "embedded-sensors-async" ]
+full = [ "async", "embedded-sensors-hal", "embedded-sensors-hal-async" ]
 async = [ "dep:embedded-hal-async" ]
-embedded-sensors = [ "dep:embedded-sensors" ]
-embedded-sensors-async = [ "dep:embedded-sensors-async" ]
+embedded-sensors-hal = [ "dep:embedded-sensors-hal" ]
+embedded-sensors-hal-async = [ "dep:embedded-sensors-hal-async" ]
 
 [dev-dependencies]
 assert_approx_eq = "1.1.0"

@@ -181,7 +181,7 @@ impl<I2C: embedded_hal_async::i2c::I2c, DELAY: embedded_hal_async::delay::DelayN
         Ok(Self::to_celsius(i16::from_be_bytes(raw)))
     }
 
-    /// Set temperature low limit register
+    /// Set temperature high limit register
     ///
     /// # Errors
     ///

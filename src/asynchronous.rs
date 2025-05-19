@@ -4,9 +4,9 @@ use core::future::Future;
 #[cfg(feature = "embedded-sensors-hal-async")]
 use embedded_sensors_hal_async::sensor;
 #[cfg(feature = "embedded-sensors-hal-async")]
-use embedded_sensors_hal_async::temperature::{DegreesCelsius, TemperatureSensor};
+use embedded_sensors_hal_async::temperature::{DegreesCelsius, TemperatureSensor, TemperatureThresholdWait};
 
-use super::{Configuration, ConversionMode, ConversionRate, Register, A0};
+use super::{Configuration, ConversionMode, ConversionRate, Polarity, Register, ThermostatMode, A0};
 
 /// TMP108 asynchronous device driver
 pub struct Tmp108<I2C: embedded_hal_async::i2c::I2c, DELAY: embedded_hal_async::delay::DelayNs> {
@@ -18,6 +18,9 @@ pub struct Tmp108<I2C: embedded_hal_async::i2c::I2c, DELAY: embedded_hal_async::
 
     /// The I2C address.
     pub(crate) addr: u8,
+
+    /// A local cache of the sensor configuration.
+    config: Configuration,
 }
 
 impl<I2C: embedded_hal_async::i2c::I2c, DELAY: embedded_hal_async::delay::DelayNs> Tmp108<I2C, DELAY> {
@@ -32,6 +35,7 @@ impl<I2C: embedded_hal_async::i2c::I2c, DELAY: embedded_hal_async::delay::DelayN
             i2c,
             delay,
             addr: a0.into(),
+            config: Configuration::default(),
         }
     }
 
@@ -59,6 +63,15 @@ impl<I2C: embedded_hal_async::i2c::I2c, DELAY: embedded_hal_async::delay::DelayN
         Self::new_async(i2c, delay, A0::Scl).await
     }
 
+    /// Create a new ALERTTMP108 instance by consuming the original TMP108 instance.
+    #[cfg(feature = "embedded-sensors-hal-async")]
+    pub fn into_alert<ALERT: embedded_hal_async::digital::Wait + embedded_hal::digital::InputPin>(
+        self,
+        alert: ALERT,
+    ) -> AlertTmp108<I2C, DELAY, ALERT> {
+        AlertTmp108 { tmp108: self, alert }
+    }
+
     /// Destroy the driver instance, return the I2C bus instance.
     pub fn destroy(self) -> I2C {
         self.i2c
@@ -81,7 +94,11 @@ impl<I2C: embedded_hal_async::i2c::I2c, DELAY: embedded_hal_async::delay::DelayN
     /// `I2C::Error` when the I2C transaction fails
     pub async fn set_configuration(&mut self, config: Configuration) -> Result<(), I2C::Error> {
         let value: u16 = config.into();
-        self.write(Register::Configuration, value.to_be_bytes()).await
+        self.write(Register::Configuration, value.to_be_bytes()).await?;
+
+        // Only cache config after successful write
+        self.config = config;
+        Ok(())
     }
 
     /// Read temperature register
@@ -227,6 +244,8 @@ impl<I2C: embedded_hal_async::i2c::I2c, DELAY: embedded_hal_async::delay::DelayN
 pub enum Error<E: embedded_hal_async::i2c::Error> {
     /// I2C Bus Error
     Bus(E),
+    /// Other Error
+    Other,
 }
 
 #[cfg(feature = "embedded-sensors-hal-async")]
@@ -249,6 +268,128 @@ impl<I2C: embedded_hal_async::i2c::I2c, DELAY: embedded_hal_async::delay::DelayN
 {
     async fn temperature(&mut self) -> Result<DegreesCelsius, Self::Error> {
         self.temperature().await.map_err(Error::Bus)
+    }
+}
+
+/// TMP108 asynchronous device driver (with alert pin)
+#[cfg(feature = "embedded-sensors-hal-async")]
+pub struct AlertTmp108<
+    I2C: embedded_hal_async::i2c::I2c,
+    DELAY: embedded_hal_async::delay::DelayNs,
+    ALERT: embedded_hal_async::digital::Wait + embedded_hal::digital::InputPin,
+> {
+    /// Underlying TMP108 sensor.
+    pub tmp108: Tmp108<I2C, DELAY>,
+    alert: ALERT,
+}
+
+#[cfg(feature = "embedded-sensors-hal-async")]
+impl<
+        I2C: embedded_hal_async::i2c::I2c,
+        DELAY: embedded_hal_async::delay::DelayNs,
+        ALERT: embedded_hal_async::digital::Wait + embedded_hal::digital::InputPin,
+    > AlertTmp108<I2C, DELAY, ALERT>
+{
+    /// Create a new ALERTTMP108 instance.
+    pub async fn new_async(i2c: I2C, delay: DELAY, a0: A0, alert: ALERT) -> Self {
+        let tmp108 = Tmp108::new_async(i2c, delay, a0).await;
+        Self { tmp108, alert }
+    }
+
+    /// Create a new ALERTTMP108 instance with A0 tied to GND, resulting in an
+    /// instance responding to address `0x48`.
+    pub async fn new_async_with_a0_gnd(i2c: I2C, delay: DELAY, alert: ALERT) -> Self {
+        Self::new_async(i2c, delay, A0::Gnd, alert).await
+    }
+
+    /// Create a new ALERTTMP108 instance with A0 tied to V+, resulting in an
+    /// instance responding to address `0x49`.
+    pub async fn new_async_with_a0_vplus(i2c: I2C, delay: DELAY, alert: ALERT) -> Self {
+        Self::new_async(i2c, delay, A0::Vplus, alert).await
+    }
+
+    /// Create a new ALERTTMP108 instance with A0 tied to SDA, resulting in an
+    /// instance responding to address `0x4a`.
+    pub async fn new_async_with_a0_sda(i2c: I2C, delay: DELAY, alert: ALERT) -> Self {
+        Self::new_async(i2c, delay, A0::Sda, alert).await
+    }
+
+    /// Create a new ALERTTMP108 instance with A0 tied to SCL, resulting in an
+    /// instance responding to address `0x4b`.
+    pub async fn new_async_with_a0_scl(i2c: I2C, delay: DELAY, alert: ALERT) -> Self {
+        Self::new_async(i2c, delay, A0::Scl, alert).await
+    }
+
+    /// Destroy the driver instance, return the I2C bus instance and ALERT pin instance.
+    pub fn destroy(self) -> (I2C, ALERT) {
+        (self.tmp108.destroy(), self.alert)
+    }
+}
+
+#[cfg(feature = "embedded-sensors-hal-async")]
+impl<
+        I2C: embedded_hal_async::i2c::I2c,
+        DELAY: embedded_hal_async::delay::DelayNs,
+        ALERT: embedded_hal_async::digital::Wait + embedded_hal::digital::InputPin,
+    > sensor::ErrorType for AlertTmp108<I2C, DELAY, ALERT>
+{
+    type Error = Error<I2C::Error>;
+}
+
+#[cfg(feature = "embedded-sensors-hal-async")]
+impl<
+        I2C: embedded_hal_async::i2c::I2c,
+        DELAY: embedded_hal_async::delay::DelayNs,
+        ALERT: embedded_hal_async::digital::Wait + embedded_hal::digital::InputPin,
+    > TemperatureSensor for AlertTmp108<I2C, DELAY, ALERT>
+{
+    async fn temperature(&mut self) -> Result<DegreesCelsius, Self::Error> {
+        self.tmp108.temperature().await.map_err(Error::Bus)
+    }
+}
+
+#[cfg(feature = "embedded-sensors-hal-async")]
+impl<
+        I2C: embedded_hal_async::i2c::I2c,
+        DELAY: embedded_hal_async::delay::DelayNs,
+        ALERT: embedded_hal_async::digital::Wait + embedded_hal::digital::InputPin,
+    > TemperatureThresholdWait for AlertTmp108<I2C, DELAY, ALERT>
+{
+    async fn set_temperature_threshold_low(&mut self, threshold: DegreesCelsius) -> Result<(), Self::Error> {
+        self.tmp108.set_low_limit(threshold).await.map_err(Error::Bus)
+    }
+
+    async fn set_temperature_threshold_high(&mut self, threshold: DegreesCelsius) -> Result<(), Self::Error> {
+        self.tmp108.set_high_limit(threshold).await.map_err(Error::Bus)
+    }
+
+    async fn wait_for_temperature_threshold(&mut self) -> Result<DegreesCelsius, Self::Error> {
+        match (self.tmp108.config.tm(), self.tmp108.config.polarity()) {
+            // In comparator mode, the ALERT pin remains active even after triggering.
+            // If called in a loop, next iteration would return immediately (after reading config again) if temperature remains outside threshold.
+            // ALERT pin only resets when temperature falls within the range of (Tlow + HYS) and (Thigh - HYS).
+            (ThermostatMode::Comparator, Polarity::ActiveLow) => {
+                self.alert.wait_for_low().await.map_err(|_| Error::Other)?;
+            }
+            (ThermostatMode::Comparator, Polarity::ActiveHigh) => {
+                self.alert.wait_for_high().await.map_err(|_| Error::Other)?;
+            }
+
+            // In interrupt mode, the ALERT pin is immediately reset (by reading config register) after triggering.
+            // If called in a loop, next iteration would wait even if temperature remains outside threshold.
+            (ThermostatMode::Interrupt, Polarity::ActiveLow) => {
+                self.alert.wait_for_falling_edge().await.map_err(|_| Error::Other)?;
+                let _ = self.tmp108.configuration().await.map_err(Error::Bus)?;
+            }
+            (ThermostatMode::Interrupt, Polarity::ActiveHigh) => {
+                self.alert.wait_for_rising_edge().await.map_err(|_| Error::Other)?;
+                let _ = self.tmp108.configuration().await.map_err(Error::Bus)?;
+            }
+        }
+
+        // Return temperature at time of trigger for caller to determine which threshold was crossed.
+        let temperature = self.tmp108.temperature().await.map_err(Error::Bus)?;
+        Ok(temperature)
     }
 }
 
@@ -357,5 +498,52 @@ mod tests {
 
         let mut mock = tmp.destroy();
         mock.done();
+    }
+
+    #[cfg(feature = "embedded-sensors-hal-async")]
+    #[tokio::test]
+    async fn handle_threshold_alerts_properly() {
+        use embedded_hal_mock::eh1::digital;
+
+        // Sensor i2c bus mocks and expectations
+        let i2c_expectations = vec![
+            Transaction::write(0x48, vec![0x01, 0x10, 0x26]),
+            Transaction::write(0x48, vec![0x02, 0x19, 0x00]),
+            Transaction::write(0x48, vec![0x03, 0x50, 0x00]),
+            Transaction::write_read(0x48, vec![0x01], vec![0x10, 0x26]),
+            Transaction::write_read(0x48, vec![0x00], vec![0x50, 0x00]),
+        ];
+        let i2c_mock = Mock::new(&i2c_expectations);
+        let delay = NoopDelay::new();
+
+        // Threshold alert GPIO pin mocks and expectations
+        let pin_expectations = vec![digital::Transaction::wait_for_edge(digital::Edge::Falling)];
+        let pin_mock = digital::Mock::new(&pin_expectations);
+
+        // Create a ALERTTMP108 instance and configure it as active-low interrupt mode
+        let mut tmp = AlertTmp108::new_async_with_a0_gnd(i2c_mock, delay, pin_mock).await;
+        let cfg = Configuration::default()
+            .with_tm(ThermostatMode::Interrupt)
+            .with_polarity(Polarity::ActiveLow);
+        let result = tmp.tmp108.set_configuration(cfg).await;
+        assert!(result.is_ok());
+
+        // Set alert thresholds
+        let result = tmp.set_temperature_threshold_low(25.0).await;
+        assert!(result.is_ok());
+        let result = tmp.set_temperature_threshold_high(80.0).await;
+        assert!(result.is_ok());
+
+        // Ensure alert pin waits for a falling edge
+        let result = tmp.wait_for_temperature_threshold().await;
+        assert!(result.is_ok());
+
+        // Check that recently sampled temperature is returned
+        let temp = result.unwrap();
+        assert_approx_eq!(temp, 80.0, 1e-4);
+
+        let (mut i2c_mock, mut pin_mock) = tmp.destroy();
+        i2c_mock.done();
+        pin_mock.done();
     }
 }

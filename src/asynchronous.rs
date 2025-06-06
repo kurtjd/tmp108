@@ -4,7 +4,9 @@ use core::future::Future;
 #[cfg(feature = "embedded-sensors-hal-async")]
 use embedded_sensors_hal_async::sensor;
 #[cfg(feature = "embedded-sensors-hal-async")]
-use embedded_sensors_hal_async::temperature::{DegreesCelsius, TemperatureSensor, TemperatureThresholdWait};
+use embedded_sensors_hal_async::temperature::{
+    DegreesCelsius, TemperatureSensor, TemperatureThresholdSet, TemperatureThresholdWait,
+};
 
 use super::{Configuration, ConversionMode, ConversionRate, Polarity, Register, ThermostatMode, A0};
 
@@ -271,6 +273,19 @@ impl<I2C: embedded_hal_async::i2c::I2c, DELAY: embedded_hal_async::delay::DelayN
     }
 }
 
+#[cfg(feature = "embedded-sensors-hal-async")]
+impl<I2C: embedded_hal_async::i2c::I2c, DELAY: embedded_hal_async::delay::DelayNs> TemperatureThresholdSet
+    for Tmp108<I2C, DELAY>
+{
+    async fn set_temperature_threshold_low(&mut self, threshold: DegreesCelsius) -> Result<(), Self::Error> {
+        self.set_low_limit(threshold).await.map_err(Error::Bus)
+    }
+
+    async fn set_temperature_threshold_high(&mut self, threshold: DegreesCelsius) -> Result<(), Self::Error> {
+        self.set_high_limit(threshold).await.map_err(Error::Bus)
+    }
+}
+
 /// TMP108 asynchronous device driver (with alert pin)
 #[cfg(feature = "embedded-sensors-hal-async")]
 pub struct AlertTmp108<
@@ -353,7 +368,7 @@ impl<
         I2C: embedded_hal_async::i2c::I2c,
         DELAY: embedded_hal_async::delay::DelayNs,
         ALERT: embedded_hal_async::digital::Wait + embedded_hal::digital::InputPin,
-    > TemperatureThresholdWait for AlertTmp108<I2C, DELAY, ALERT>
+    > TemperatureThresholdSet for AlertTmp108<I2C, DELAY, ALERT>
 {
     async fn set_temperature_threshold_low(&mut self, threshold: DegreesCelsius) -> Result<(), Self::Error> {
         self.tmp108.set_low_limit(threshold).await.map_err(Error::Bus)
@@ -362,7 +377,15 @@ impl<
     async fn set_temperature_threshold_high(&mut self, threshold: DegreesCelsius) -> Result<(), Self::Error> {
         self.tmp108.set_high_limit(threshold).await.map_err(Error::Bus)
     }
+}
 
+#[cfg(feature = "embedded-sensors-hal-async")]
+impl<
+        I2C: embedded_hal_async::i2c::I2c,
+        DELAY: embedded_hal_async::delay::DelayNs,
+        ALERT: embedded_hal_async::digital::Wait + embedded_hal::digital::InputPin,
+    > TemperatureThresholdWait for AlertTmp108<I2C, DELAY, ALERT>
+{
     async fn wait_for_temperature_threshold(&mut self) -> Result<DegreesCelsius, Self::Error> {
         match (self.tmp108.config.tm(), self.tmp108.config.polarity()) {
             // In comparator mode, the ALERT pin remains active even after triggering.

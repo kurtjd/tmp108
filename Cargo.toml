@@ -24,13 +24,14 @@ bilge = "0.2.0"
 embedded-hal = "1.0.0"
 embedded-hal-async = { version = "1.0.0", optional = true }
 embedded-sensors-hal = { version = "0.1.0", optional = true }
-embedded-sensors-hal-async = { version = "0.2.0", optional = true }
+embedded-sensors-hal-async = { version = "0.3.0", optional = true }
 
 [features]
 full = [ "async", "embedded-sensors-hal", "embedded-sensors-hal-async" ]
 async = [ "dep:embedded-hal-async" ]
 embedded-sensors-hal = [ "dep:embedded-sensors-hal" ]
 embedded-sensors-hal-async = [ "dep:embedded-sensors-hal-async" ]
+default = ["full"]
 
 [dev-dependencies]
 assert_approx_eq = "1.1.0"

@@ -28,7 +28,7 @@ jobs:
       - name: cargo install cargo-hack
         uses: taiki-e/install-action@cargo-hack
       - name: cargo check
-        run: cargo check -F full
+        run: cargo check -F full --locked
 
   msrv:
     runs-on: ubuntu-latest
@@ -60,4 +60,4 @@ jobs:
         with:
           toolchain: ${{ matrix.msrv }}
       - name: cargo +${{ matrix.msrv }} check
-        run: cargo check -F full
+        run: cargo check -F full --locked
